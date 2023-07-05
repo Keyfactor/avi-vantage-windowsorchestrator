@@ -1,4 +1,4 @@
-﻿// Copyright 2021 Keyfactor
+﻿// Copyright 2023 Keyfactor
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,7 +58,9 @@ namespace Keyfactor.AnyAgent.AviVantage.Jobs
                 string uuid = null;
                 try
                 {
+                    Logger.Trace($"Looking for existing certificate with name '{jobInfo.Alias}'");
                     SSLKeyAndCertificate foundCert = await Client.GetCertificateByName(jobInfo.Alias);
+                    Logger.Trace($"Found existing certificate with name '{jobInfo.Alias}' and UUID '{foundCert.uuid}'");
                     uuid = foundCert.uuid;
                 }
                 catch (Exception ex)
@@ -73,6 +75,7 @@ namespace Keyfactor.AnyAgent.AviVantage.Jobs
                     // replace found cert with cert to add
                     try
                     {
+                        Logger.Debug($"Attempting to update existing certificate with name '{jobInfo.Alias}'");
                         await Client.UpdateCertificate(uuid, cert);
                     }
                     catch (Exception ex)
@@ -82,20 +85,34 @@ namespace Keyfactor.AnyAgent.AviVantage.Jobs
                 }
                 else
                 {
-                    // no cert found
+                    // no cert found to overwrite
                     Logger.Info($"No cert found to overwrite with name '{jobInfo.Alias}'");
+                    // add overwrite certificate as normal
+                    try
+                    {
+                        Logger.Debug($"Adding certificate after finding no existing certificate with name '{jobInfo.Alias}'");
+                        await Client.AddCertificate(cert);
+                    }
+                    catch (Exception ex)
+                    {
+                        return ThrowError(ex, "addition of certificate (with none to overwrite) to Avi Vantage");
+                    }
+                }
+            }
+            else
+            {
+                // add new certificate
+                try
+                {
+                    Logger.Debug($"Adding new certificate with name '{jobInfo.Alias}'");
+                    await Client.AddCertificate(cert);
+                }
+                catch (Exception ex)
+                {
+                    return ThrowError(ex, "addition of new certificate to Avi Vantage");
                 }
             }
 
-            // add new certificate
-            try
-            {
-                await Client.AddCertificate(cert);
-            }
-            catch (Exception ex)
-            {
-                return ThrowError(ex, "addition of new certificate to Avi Vantage");
-            }
             return Success();
         }
 
