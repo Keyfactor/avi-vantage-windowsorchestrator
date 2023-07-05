@@ -3,7 +3,7 @@ on: [workflow_dispatch, push, pull_request]
 
 jobs:
   call-create-github-release-workflow:
-    uses: Keyfactor/actions/.github/workflows/github-release.yml@support-v-tags
+    uses: Keyfactor/actions/.github/workflows/github-release.yml@main
 
   get-manifest-properties:
     runs-on: windows-latest
